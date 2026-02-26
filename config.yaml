@@ -1,0 +1,31 @@
+universe:
+  tickers: ["AAPL", "MSFT", "GOOGL", "JPM", "GS", "BAC"]
+  benchmark: "SPY"
+  start_date: "2020-01-01"
+  end_date: null
+
+ingestion:
+  retry_attempts: 3
+  retry_delay_seconds: 5
+
+storage:
+  base_path: "data"
+  format: "parquet"
+
+transforms:
+  indicators:
+    sma_windows: [20, 50, 200]
+    ema_windows: [12, 26]
+    rsi_window: 14
+    macd_fast: 12
+    macd_slow: 26
+    macd_signal: 9
+    bollinger_window: 20
+    volatility_window: 30
+
+analysis:
+  risk_free_rate: 0.04
+
+reporting:
+  output_path: "output"
+  template: "src/finance_data_platform/reporting/templates/report.html"
