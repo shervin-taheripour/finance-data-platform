@@ -30,8 +30,17 @@ data/*
 !data/raw/
 !data/staged/
 !data/curated/
+data/raw/*
+data/staged/*
+data/curated/*
 !data/raw/.gitkeep
 !data/staged/.gitkeep
 !data/curated/.gitkeep
 output/*
 !output/.gitkeep
+
+# Legacy Code
+/legacy_code/
+
+# Project Docs
+/project_docs/

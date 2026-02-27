@@ -1,9 +1,11 @@
 .RECIPEPREFIX := >
 
+PYTHON ?= .venv/bin/python3
+
 .PHONY: ingest transform analyze report pipeline test lint clean docker-up docker-down
 
 ingest:
->echo "Stub target: ingestion step will be implemented in a later packet."
+>PYTHONPATH=src $(PYTHON) -m finance_data_platform.ingestion.run_ingest
 
 transform:
 >echo "Stub target: transform step will be implemented in a later packet."
@@ -21,10 +23,10 @@ pipeline:
 >$(MAKE) report
 
 test:
->PYTHONPATH=src python -m pytest -q
+>PYTHONPATH=src $(PYTHON) -m pytest -q
 
 lint:
->PYTHONPATH=src python -m ruff check .
+>PYTHONPATH=src $(PYTHON) -m ruff check .
 
 clean:
 >find data -mindepth 1 ! -name ".gitkeep" -delete 2>/dev/null || true
