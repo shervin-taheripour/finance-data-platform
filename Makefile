@@ -1,6 +1,6 @@
 .RECIPEPREFIX := >
 
-PYTHON ?= .venv/bin/python3
+PYTHON ?= python3
 
 .PHONY: ingest transform analyze report pipeline test lint clean docker-up docker-down
 
