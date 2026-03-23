@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-init:
+    user: "${AIRFLOW_UID:-50000}:0"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: &airflow-env
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW_UID: "${AIRFLOW_UID:-50000}"
+    working_dir: /opt/airflow/app
+    command:
+      - bash
+      - -lc
+      - |
+        airflow db migrate && \
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Shervin \
+          --lastname Taheripour \
+          --role Admin \
+          --email admin@example.com || true
+    volumes: &airflow-volumes
+      - ./src:/opt/airflow/app/src
+      - ./config.yaml:/opt/airflow/app/config.yaml
+      - ./orchestration/dags:/opt/airflow/dags
+      - ./data:/opt/airflow/app/data
+      - ./output:/opt/airflow/app/output
+
+  airflow-webserver:
+    user: "${AIRFLOW_UID:-50000}:0"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment: *airflow-env
+    working_dir: /opt/airflow/app
+    command: webserver
+    ports:
+      - "8080:8080"
+    volumes: *airflow-volumes
+    restart: unless-stopped
+
+  airflow-scheduler:
+    user: "${AIRFLOW_UID:-50000}:0"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment: *airflow-env
+    working_dir: /opt/airflow/app
+    command: scheduler
+    volumes: *airflow-volumes
+    restart: unless-stopped
+
+volumes:
+  postgres-db-volume:

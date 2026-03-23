@@ -33,7 +33,8 @@ clean:
 >rm -rf .pytest_cache .ruff_cache
 
 docker-up:
->echo "Stub target: docker orchestration will be implemented in a later packet."
+>docker compose up airflow-init
+>docker compose up -d postgres airflow-scheduler airflow-webserver
 
 docker-down:
->echo "Stub target: docker orchestration will be implemented in a later packet."
+>docker compose down --volumes --remove-orphans
