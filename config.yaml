@@ -22,6 +22,8 @@ transforms:
     macd_signal: 9
     bollinger_window: 20
     volatility_window: 30
+  enrichment:
+    correlation_window: 60
 
 analysis:
   risk_free_rate: 0.04

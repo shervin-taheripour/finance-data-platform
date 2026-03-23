@@ -8,16 +8,15 @@ ingest:
 >PYTHONPATH=src $(PYTHON) -m finance_data_platform.ingestion.run_ingest
 
 transform:
->echo "Stub target: transform step will be implemented in a later packet."
+>PYTHONPATH=src $(PYTHON) -m finance_data_platform.transforms.run_transform
 
 analyze:
->echo "Stub target: analysis step will be implemented in a later packet."
+>PYTHONPATH=src $(PYTHON) -m finance_data_platform.analysis.run_analyze
 
 report:
->echo "Stub target: reporting step will be implemented in a later packet."
+>PYTHONPATH=src $(PYTHON) -m finance_data_platform.reporting.run_report
 
 pipeline:
->$(MAKE) ingest
 >$(MAKE) transform
 >$(MAKE) analyze
 >$(MAKE) report

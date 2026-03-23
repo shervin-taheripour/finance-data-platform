@@ -18,6 +18,8 @@ dependencies = [
   "yfinance>=0.2.50,<1.0",
   "pyarrow>=16.0,<21.0",
   "duckdb>=1.0,<2.0",
+  "Jinja2>=3.1,<4.0",
+  "matplotlib>=3.8,<4.0",
 ]
 
 [project.optional-dependencies]
