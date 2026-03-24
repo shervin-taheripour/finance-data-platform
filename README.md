@@ -182,10 +182,15 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
 
-Run steps individually:
+Run ingestion once to populate the raw zone:
 
 ```bash
 make ingest
+
+
+Run steps individually:
+
+```bash
 make transform
 make analyze
 make report
