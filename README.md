@@ -186,7 +186,7 @@ Run ingestion once to populate the raw zone:
 
 ```bash
 make ingest
-
+```
 
 Run steps individually:
 
