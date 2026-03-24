@@ -29,34 +29,57 @@ If a recruiter opens this repo without running anything, they should be able to 
 6. Renders self-contained HTML reports with embedded charts
 7. Runs either locally through `make` targets or under Airflow via Docker Compose
 
-## Architecture At A Glance
+## Architecture
 
-Text blueprint for the current architecture:
+```mermaid
+flowchart TB
+    subgraph src ["Data pipeline"]
+        direction TB
+        API["yfinance API"]
+        ING["Ingestion layer\n<i>Pydantic validation</i>"]
+        RAW["Raw zone\n<i>data/raw/*.parquet</i>"]
+        TRN["Transforms\n<i>Indicators + enrichment</i>"]
+        STG["Staged zone\n<i>data/staged/*.parquet</i>"]
+        ANA["Analysis\n<i>CAPM · Sharpe · Treynor</i>"]
+        CUR["Curated zone\n<i>data/curated/*.parquet</i>"]
+        RPT["HTML report\n<i>Jinja2 + matplotlib</i>"]
 
-```text
-yfinance
-  -> ingestion + schema validation
-  -> data/raw/*.parquet
-  -> transforms (indicators + enrichment)
-  -> data/staged/*.parquet
-  -> analysis (CAPM, Sharpe, Treynor, variance)
-  -> data/curated/*.parquet
-  -> Jinja2 + matplotlib reporting
-  -> output/*.html
+        API --> ING --> RAW --> TRN --> STG --> ANA --> CUR --> RPT
+    end
+
+    subgraph orch ["Orchestration (control plane)"]
+        direction TB
+        AF["Airflow DAG"]
+        T1["ingest_raw"] --> T2["transform_staged"] --> T3["analyze_curated"] --> T4["render_reports"]
+    end
+
+    DDB[("DuckDB\nSQL query layer")]
+
+    RAW -.- DDB
+    STG -.- DDB
+    CUR -.- DDB
+
+    AF -.->|triggers| ING
+
+    style RAW fill:#E6F1FB,stroke:#185FA5,color:#0C447C
+    style STG fill:#E1F5EE,stroke:#0F6E56,color:#085041
+    style CUR fill:#EAF3DE,stroke:#3B6D11,color:#27500A
+    style ING fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+    style TRN fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+    style ANA fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+    style DDB fill:#FAEEDA,stroke:#854F0B,color:#633806
+    style API fill:#F1EFE8,stroke:#5F5E5A,color:#444441
+    style RPT fill:#FAECE7,stroke:#993C1D,color:#712B13
+    style AF fill:#F1EFE8,stroke:#5F5E5A,color:#444441
+    style T1 fill:#F1EFE8,stroke:#5F5E5A,color:#444441
+    style T2 fill:#F1EFE8,stroke:#5F5E5A,color:#444441
+    style T3 fill:#F1EFE8,stroke:#5F5E5A,color:#444441
+    style T4 fill:#F1EFE8,stroke:#5F5E5A,color:#444441
 ```
 
-Control plane:
+Two execution modes: `make pipeline` for local development, or `docker-compose up` for the full Airflow-orchestrated path. Both run the same Python entrypoints.
 
-```text
-Local path:   make ingest -> make transform -> make analyze -> make report
-Docker path:  Docker Compose -> Airflow DAG -> same Python entrypoints
-```
-
-Full architecture blueprint:
-- [docs/architecture.md](docs/architecture.md)
-
-Deep design rationale:
-- [docs/DESIGN.md](docs/DESIGN.md)
+Full architecture blueprint: [docs/architecture.md](docs/architecture.md) · Design rationale: [docs/DESIGN.md](docs/DESIGN.md)
 
 ## Tech Stack
 
