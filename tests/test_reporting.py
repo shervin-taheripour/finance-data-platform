@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -126,5 +127,45 @@ def test_render_report_creates_self_contained_html(tmp_path: Path) -> None:
     html = report_path.read_text(encoding="utf-8")
     assert "AAPL Market Report" in html
     assert "Apple Inc." in html
+    assert "Company Profile" in html
+    assert "Company Name" in html
+    assert "Sharpe Ratio" in html
+    assert "Equal-Weight Variance" in html
+    assert "Cumulative Return" in html
     assert "data:image/png;base64," in html
     assert "CAPM Relationship" in html
+    assert "long_name" not in html
+    assert "sharpe_ratio" not in html
+    assert "equal_weight_variance" not in html
+    assert "cumulative_return" not in html
+
+
+def test_render_report_warns_on_unmapped_fields(tmp_path: Path, caplog) -> None:
+    config = yaml.safe_load(Path("config.yaml").read_text())
+    prices = _sample_prices()
+    indicators = build_indicator_frame(prices, config)
+    curated = build_curated_views(indicators, benchmark_symbol="SPY", correlation_window=3)
+    summary = build_portfolio_summary(
+        curated["returns"],
+        market_symbol="SPY",
+        risk_free_rate=0.0,
+    )
+
+    registry_path = tmp_path / "report_fields.yaml"
+    registry_text = Path("config/report_fields.yaml").read_text(encoding="utf-8")
+    registry_path.write_text(registry_text, encoding="utf-8")
+
+    caplog.set_level(logging.WARNING)
+    render_report(
+        symbol="AAPL",
+        metadata={"symbol": "AAPL", "long_name": "Apple Inc.", "unknown_metadata": "value"},
+        indicator_frame=indicators,
+        portfolio_summary=summary,
+        output_path=tmp_path / "warn_report.html",
+        field_registry_path=registry_path,
+    )
+
+    assert "Unmapped report fields detected" in caplog.text
+    assert "unknown_metadata" in caplog.text
+    assert "config/report_fields.yaml" not in caplog.text
+    assert str(registry_path) in caplog.text

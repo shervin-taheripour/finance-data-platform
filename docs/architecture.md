@@ -99,7 +99,7 @@ Docker Compose
             -> render_reports
 ```
 
-This mode is for reproducibility, scheduling, and recruiter-visible orchestration maturity.
+This mode is for reproducibility, scheduling, and repeatable orchestration.
 
 ## Layer Contracts
 

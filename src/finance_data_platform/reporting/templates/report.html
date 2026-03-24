@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ symbol }} Report | Finance Data Platform</title>
+    <title>{{ symbol }} Report</title>
     <style>
       :root {
         --bg: #f6f3eb;
@@ -115,14 +115,14 @@
   <body>
     <main class="page">
       <section class="hero">
-        <h2>Finance Data Platform</h2>
+        <h2>Market Summary</h2>
         <h1>{{ symbol }} Market Report</h1>
-        <p>Automated summary of metadata, technical indicators, cumulative performance, and CAPM analytics.</p>
+        <p>Company profile, latest technical indicators, cumulative performance, and risk metrics.</p>
       </section>
 
       <section class="grid">
         <article class="panel">
-          <h2>Metadata</h2>
+          <h2>Company Profile</h2>
           {{ metadata_table | safe }}
         </article>
         <article class="panel">

@@ -44,3 +44,7 @@ output/*
 
 # Project Docs
 /project_docs/
+
+# Local environment
+.env
+!.env.example

@@ -1,19 +1,19 @@
 # Design
 
 This document explains the engineering decisions behind `finance-data-platform`.
-It is written for a technical reviewer who wants to understand not just what the project does, but why the architecture was chosen and where its boundaries are.
+It is written to explain what the system does, why the architecture was chosen, and where its boundaries are.
 
 ## 1. Scope
 
 This is a finance-domain data engineering project.
-Its purpose is to demonstrate the design and delivery of a layered, tested, orchestrated pipeline rather than a trading strategy or machine learning product.
+Its purpose is to provide a layered, tested, orchestrated pipeline for finance-domain data rather than a trading strategy or machine learning product.
 
 The platform:
 - ingests market data from yfinance
 - validates records at the ingestion boundary
 - stores data across raw, staged, and curated zones
 - computes technical indicators and portfolio analytics
-- renders recruiter-friendly HTML reports
+- renders self-contained HTML reports
 - runs locally or under Airflow with Docker
 
 The platform does not:
@@ -23,7 +23,7 @@ The platform does not:
 - depend on cloud infrastructure
 - optimize for large-scale distributed workloads
 
-Those omissions are intentional. The goal is a focused, credible MVP with strong engineering signal.
+Those omissions are intentional. The goal is a focused MVP with clear boundaries and maintainable scope.
 
 ## 2. Architecture Rationale
 
@@ -35,7 +35,7 @@ The raw -> staged -> curated pattern creates clean contracts between pipeline st
 - Staged holds transformed price data with technical indicators.
 - Curated holds analysis-ready outputs and summary metrics.
 
-This separation improves traceability, reprocessing, and debugging. It also mirrors how production analytical platforms are usually organized, which makes the project legible to data engineering recruiters.
+This separation improves traceability, reprocessing, and debugging. It also mirrors how production analytical platforms are commonly organized.
 
 ### Why ticker-level partitioning?
 
@@ -65,7 +65,6 @@ Chosen because it is the dominant language across data engineering, Airflow, ana
 
 Why not another language?
 - the surrounding ecosystem for this project is strongest in Python
-- recruiter expectations for this exact project shape are Python-first
 
 ### yfinance
 
@@ -73,7 +72,7 @@ Chosen because it provides OHLCV, dividends, splits, and metadata through one wi
 
 Why not Alpha Vantage or Finnhub first?
 - they are good follow-on connectors
-- they add API surface and rate-limit concerns without changing the architecture signal for MVP
+- they add API surface and rate-limit concerns without changing the core architecture for MVP
 
 ### Pydantic v2 at the ingestion boundary
 
@@ -91,7 +90,7 @@ Why not manual validation?
 - harder to test and reason about
 
 Why not Pandera?
-- strong tool, but Pydantic is more mainstream for typed validation contracts and has broader recognition
+- strong tool, but Pydantic fits this repo well as an explicit typed validation boundary
 
 ### Parquet + pyarrow
 
@@ -125,11 +124,11 @@ Why not Postgres for project data?
 
 ### pandas + numpy for transforms
 
-Chosen because the data volumes are modest and pandas is extremely readable to reviewers.
+Chosen because the data volumes are modest and pandas keeps the implementation straightforward at this scale.
 
 Why not Polars?
 - technically attractive
-- less universally recognized in the target hiring market
+- a less necessary dependency at the current project scale
 
 Why not Spark?
 - not justified by dataset size
@@ -141,26 +140,26 @@ Chosen because they produce static, shareable output artifacts.
 
 Pros:
 - no running web app needed
-- reports can be committed and reviewed directly
+- reports can be committed and inspected directly
 - charts embed cleanly as base64 assets
 
 Why not Streamlit?
-- sends more of a dashboard / analytics engineering / data science signal
+- introduces a dashboard-oriented interaction layer that is outside the current scope
 - requires a serving layer
-- weaker artifact story for repo review
+- less aligned with the static-report artifact model used here
 
 ### Airflow for orchestration
 
-Chosen because it is the most recognizable scheduler/orchestrator in enterprise data engineering, especially in finance and banking.
+Chosen because it provides explicit task dependencies, retries, scheduling, and run-state visibility for the pipeline.
 
 Pros:
 - DAG-based dependency management
 - retries and task state visibility
-- strong recruiter familiarity
+- a mature operational model with clear task state, retries, and scheduling semantics
 
 Why not Prefect?
 - cleaner developer experience in many ways
-- less universal recognition in the exact hiring context this project targets
+- a different trade-off profile that is less aligned with the current stack choice
 
 Why not cron?
 - too primitive
@@ -173,11 +172,11 @@ Chosen because it packages the working project together with Airflow and its met
 Pros:
 - reproducible onboarding
 - clear separation between local and orchestrated paths
-- easy to demo in a portfolio setting
+- easy to run repeatedly on a single machine
 
 Why not cloud deployment now?
 - it would add infrastructure cost and complexity
-- it does not materially improve the engineering signal of the MVP repo
+- it does not materially improve the MVP at the current stage
 
 ## 4. Data Contracts
 
@@ -248,10 +247,10 @@ This is not duplication. These two tools serve completely different responsibili
 This project intentionally stops short of a number of tempting extensions.
 
 ### No machine learning
-The project is meant to signal data engineering, not forecasting or quant modeling.
+The project scope is data engineering, not forecasting or quant modeling.
 
 ### No interactive dashboard
-Static reports are more appropriate for artifact-based review and versioned outputs.
+Static reports are more appropriate for versioned outputs and repeatable generation.
 
 ### No dbt yet
 The staged/curated model would support dbt later, but Airflow + Python is enough for MVP.
@@ -301,6 +300,6 @@ The project consistently favors:
 - reproducibility over convenience
 - analytical file storage over server-heavy infrastructure
 - thin orchestration over framework-heavy coupling
-- recruiter legibility over novelty for novelty’s sake
+- clear boundaries over novelty for novelty’s sake
 
 That is the central design principle of the entire repo.

@@ -89,6 +89,10 @@ def main(config_path: str = "config.yaml") -> None:
                 output_path=report_path,
                 template_path=config["reporting"]["template"],
                 market_symbol=market_symbol,
+                field_registry_path=config["reporting"].get(
+                    "field_registry",
+                    "config/report_fields.yaml",
+                ),
             )
         )
 

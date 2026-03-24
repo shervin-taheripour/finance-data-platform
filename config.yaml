@@ -31,3 +31,4 @@ analysis:
 reporting:
   output_path: "output"
   template: "src/finance_data_platform/reporting/templates/report.html"
+  field_registry: "config/report_fields.yaml"

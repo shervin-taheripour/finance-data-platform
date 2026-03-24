@@ -4,18 +4,23 @@ from __future__ import annotations
 
 import base64
 import io
+import logging
 from collections.abc import Mapping
+from functools import cache
 from pathlib import Path
 from typing import Any
 
 import matplotlib
 import pandas as pd
+import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 DEFAULT_TEMPLATE = Path("src/finance_data_platform/reporting/templates/report.html")
+DEFAULT_FIELD_REGISTRY = Path("config/report_fields.yaml")
+LOGGER = logging.getLogger(__name__)
 
 
 def fig_to_base64(fig: plt.Figure) -> str:
@@ -27,6 +32,78 @@ def fig_to_base64(fig: plt.Figure) -> str:
     buffer.seek(0)
     return base64.b64encode(buffer.read()).decode("utf-8")
 
+
+@cache
+def _load_field_registry(
+    registry_path: str,
+) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    payload = yaml.safe_load(Path(registry_path).read_text(encoding="utf-8")) or {}
+    exact: dict[str, dict[str, Any]] = {}
+    patterns: list[dict[str, Any]] = []
+    for item in payload.get("fields", []):
+        field_name = str(item["field_name"])
+        entry = {
+            "field_name": field_name,
+            "display_label": str(item["display_label"]),
+            "section": str(item.get("section", "general")),
+            "format_type": str(item.get("format_type", "text")),
+        }
+        if field_name.endswith("*"):
+            patterns.append(entry)
+        else:
+            exact[field_name] = entry
+    return exact, patterns
+
+
+def _field_spec(name: str, registry_path: Path) -> dict[str, Any] | None:
+    exact, patterns = _load_field_registry(str(registry_path))
+    if name in exact:
+        return exact[name]
+    for entry in patterns:
+        prefix = entry["field_name"][:-1]
+        if name.startswith(prefix):
+            match = dict(entry)
+            match["suffix"] = name[len(prefix) :]
+            return match
+    return None
+
+
+def _fallback_label(name: str) -> str:
+    return name.replace("_", " ").title()
+
+
+def _display_label(name: str, registry_path: Path) -> str:
+    spec = _field_spec(name, registry_path)
+    if spec is None:
+        return _fallback_label(name)
+    suffix = spec.get("suffix")
+    if suffix is None:
+        return spec["display_label"]
+    return spec["display_label"].format(suffix=suffix)
+
+
+def _format_value(field_name: str, value: Any, registry_path: Path) -> Any:
+    if pd.isna(value):
+        return "n/a"
+
+    spec = _field_spec(field_name, registry_path)
+    format_type = spec["format_type"] if spec is not None else "text"
+
+    if format_type == "text":
+        return value
+    if format_type == "source_name" and isinstance(value, str):
+        return value.replace("yfinance", "Yahoo Finance")
+    if format_type == "integer":
+        return f"{int(value):,}"
+
+    numeric = float(value)
+    if format_type.startswith("decimal_"):
+        digits = int(format_type.split("_", 1)[1])
+        return f"{numeric:,.{digits}f}"
+    if format_type.startswith("percent_"):
+        digits = int(format_type.split("_", 1)[1])
+        return f"{numeric:.{digits}%}"
+    return value
 
 
 def _coerce_metadata(metadata: Mapping[str, Any] | pd.DataFrame | None) -> pd.DataFrame:
@@ -44,11 +121,66 @@ def _coerce_metadata(metadata: Mapping[str, Any] | pd.DataFrame | None) -> pd.Da
     return pd.DataFrame({"field": list(row.keys()), "value": list(row.values())})
 
 
-
 def _latest_column(columns: list[str], prefix: str) -> str | None:
     matches = [col for col in columns if col.startswith(prefix)]
     return matches[0] if matches else None
 
+
+def _prepare_metadata_table(metadata: pd.DataFrame, registry_path: Path) -> pd.DataFrame:
+    if metadata.empty:
+        return metadata
+    return pd.DataFrame(
+        {
+            "Field": [_display_label(field, registry_path) for field in metadata["field"]],
+            "Value": [
+                _format_value(field, value, registry_path)
+                for field, value in zip(metadata["field"], metadata["value"], strict=True)
+            ],
+        }
+    )
+
+
+def _prepare_snapshot_table(
+    df: pd.DataFrame,
+    registry_path: Path,
+    label_name: str,
+) -> pd.DataFrame:
+    if df.empty:
+        return df
+    return pd.DataFrame(
+        {
+            label_name: [_display_label(metric, registry_path) for metric in df["metric"]],
+            "Value": [
+                _format_value(metric, value, registry_path)
+                for metric, value in zip(df["metric"], df["value"], strict=True)
+            ],
+        }
+    )
+
+
+def _prepare_cumulative_table(df: pd.DataFrame, registry_path: Path) -> pd.DataFrame:
+    if df.empty:
+        return df
+    return pd.DataFrame(
+        {
+            _display_label("symbol", registry_path): df["symbol"].astype(str),
+            _display_label("cumulative_return", registry_path): [
+                _format_value("cumulative_return", value, registry_path)
+                for value in df["cumulative_return"]
+            ],
+        }
+    )
+
+
+def _warn_on_unmapped_fields(fields: set[str], registry_path: Path) -> None:
+    unmapped = sorted(field for field in fields if _field_spec(field, registry_path) is None)
+    if not unmapped:
+        return
+    LOGGER.warning(
+        "Unmapped report fields detected: %s. Add them to %s.",
+        ", ".join(unmapped),
+        registry_path,
+    )
 
 
 def _build_indicator_snapshot(indicator_frame: pd.DataFrame, symbol: str) -> pd.DataFrame:
@@ -67,17 +199,7 @@ def _build_indicator_snapshot(indicator_frame: pd.DataFrame, symbol: str) -> pd.
     ]
     metric_cols = [col for col in metric_cols if col is not None]
 
-    snapshot = []
-    for col in metric_cols:
-        value = latest[col]
-        snapshot.append(
-            {
-                "metric": col,
-                "value": "n/a" if pd.isna(value) else round(float(value), 4),
-            }
-        )
-    return pd.DataFrame(snapshot)
-
+    return pd.DataFrame([{"metric": col, "value": latest[col]} for col in metric_cols])
 
 
 def _build_analysis_snapshot(portfolio_summary: dict[str, Any], symbol: str) -> pd.DataFrame:
@@ -86,46 +208,22 @@ def _build_analysis_snapshot(portfolio_summary: dict[str, Any], symbol: str) -> 
     treynor = portfolio_summary["treynor_ratio"]
 
     snapshot = [
-        {
-            "metric": "sharpe_ratio",
-            "value": round(float(sharpe.get(symbol, float("nan"))), 4)
-            if pd.notna(sharpe.get(symbol))
-            else "n/a",
-        },
-        {
-            "metric": "treynor_ratio",
-            "value": round(float(treynor.get(symbol, float("nan"))), 4)
-            if pd.notna(treynor.get(symbol))
-            else "n/a",
-        },
+        {"metric": "sharpe_ratio", "value": sharpe.get(symbol, float("nan"))},
+        {"metric": "treynor_ratio", "value": treynor.get(symbol, float("nan"))},
     ]
 
     if symbol in capm.index:
         snapshot.extend(
             [
-                {
-                    "metric": "beta",
-                    "value": round(float(capm.loc[symbol, "beta"]), 4)
-                    if pd.notna(capm.loc[symbol, "beta"])
-                    else "n/a",
-                },
-                {
-                    "metric": "alpha",
-                    "value": round(float(capm.loc[symbol, "alpha"]), 6)
-                    if pd.notna(capm.loc[symbol, "alpha"])
-                    else "n/a",
-                },
+                {"metric": "beta", "value": capm.loc[symbol, "beta"]},
+                {"metric": "alpha", "value": capm.loc[symbol, "alpha"]},
             ]
         )
 
     snapshot.append(
-        {
-            "metric": "equal_weight_variance",
-            "value": round(float(portfolio_summary["equal_weight_variance"]), 6),
-        }
+        {"metric": "equal_weight_variance", "value": portfolio_summary["equal_weight_variance"]}
     )
     return pd.DataFrame(snapshot)
-
 
 
 def build_indicator_chart(
@@ -167,7 +265,6 @@ def build_indicator_chart(
     return fig_to_base64(fig)
 
 
-
 def build_returns_chart(
     portfolio_summary: dict[str, Any],
     asset: str,
@@ -192,7 +289,6 @@ def build_returns_chart(
     ax.legend(loc="upper left")
     fig.tight_layout()
     return fig_to_base64(fig)
-
 
 
 def build_capm_chart(
@@ -232,12 +328,10 @@ def build_capm_chart(
     return fig_to_base64(fig)
 
 
-
 def _build_html_table(df: pd.DataFrame, index: bool = False) -> str:
     if df.empty:
         return '<p class="empty">No data available.</p>'
     return df.to_html(index=index, classes="report-table", border=0)
-
 
 
 def render_report(
@@ -248,30 +342,54 @@ def render_report(
     output_path: str | Path,
     template_path: str | Path = DEFAULT_TEMPLATE,
     market_symbol: str = "SPY",
+    field_registry_path: str | Path = DEFAULT_FIELD_REGISTRY,
 ) -> Path:
     """Render a self-contained HTML report to disk."""
 
     template_path = Path(template_path)
+    field_registry_path = Path(field_registry_path)
     env = Environment(
         loader=FileSystemLoader(str(template_path.parent)),
         autoescape=select_autoescape(["html", "xml"]),
     )
     template = env.get_template(template_path.name)
 
-    metadata_table = _coerce_metadata(metadata)
-    indicator_snapshot = _build_indicator_snapshot(indicator_frame, symbol)
-    analysis_snapshot = _build_analysis_snapshot(portfolio_summary, symbol)
+    metadata_raw = _coerce_metadata(metadata)
+    indicator_raw = _build_indicator_snapshot(indicator_frame, symbol)
+    analysis_raw = _build_analysis_snapshot(portfolio_summary, symbol)
+    cumulative_raw = portfolio_summary["latest_cumulative_returns"].reset_index().rename(
+        columns={"index": "symbol"}
+    )
+
+    fields_to_check = set(metadata_raw.get("field", pd.Series(dtype=str)).astype(str))
+    fields_to_check.update(indicator_raw.get("metric", pd.Series(dtype=str)).astype(str))
+    fields_to_check.update(analysis_raw.get("metric", pd.Series(dtype=str)).astype(str))
+    if not cumulative_raw.empty:
+        fields_to_check.update(["symbol", "cumulative_return"])
+    _warn_on_unmapped_fields(fields_to_check, field_registry_path)
+
+    metadata_table = _prepare_metadata_table(metadata_raw, field_registry_path)
+    indicator_snapshot = _prepare_snapshot_table(
+        indicator_raw,
+        field_registry_path,
+        label_name="Indicator",
+    )
+    analysis_snapshot = _prepare_snapshot_table(
+        analysis_raw,
+        field_registry_path,
+        label_name="Metric",
+    )
+    cumulative_table = _prepare_cumulative_table(
+        cumulative_raw,
+        field_registry_path,
+    )
 
     context = {
         "symbol": symbol,
         "metadata_table": _build_html_table(metadata_table),
         "indicator_snapshot_table": _build_html_table(indicator_snapshot),
         "analysis_snapshot_table": _build_html_table(analysis_snapshot),
-        "latest_cumulative_table": _build_html_table(
-            portfolio_summary["latest_cumulative_returns"].reset_index().rename(
-                columns={"index": "symbol"}
-            )
-        ),
+        "latest_cumulative_table": _build_html_table(cumulative_table),
         "indicator_chart": build_indicator_chart(indicator_frame, symbol),
         "returns_chart": build_returns_chart(
             portfolio_summary,

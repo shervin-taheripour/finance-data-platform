@@ -4,7 +4,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-A layered data platform for financial market data — from ingestion to automated reporting — built with modern Python data engineering practices. Explicit data contracts, partitioned Parquet storage, DuckDB analytical reads, Airflow orchestration, Docker reproducibility, and self-contained HTML report artifacts.
+A layered data platform for financial market data, from ingestion to automated HTML reporting. The implementation emphasizes explicit data contracts, partitioned Parquet storage, DuckDB analytical reads, Airflow orchestration, Docker reproducibility, and self-contained report artifacts.
 
 ## Why This Project Exists
 
@@ -76,7 +76,7 @@ Full architecture blueprint: [docs/architecture.md](docs/architecture.md) · Des
 
 | Area | Choice | Why this was chosen |
 |---|---|---|
-| Language | Python 3.11+ | Industry standard for data engineering and finance |
+| Language | Python 3.11+ | Strong ecosystem support for data engineering and finance |
 | Source data | yfinance | Fastest single-source path to OHLCV, dividends, splits, and metadata |
 | Validation | Pydantic v2 | Explicit ingestion boundary and strong schema contracts |
 | File format | Parquet / pyarrow | Columnar, compressed, analytics-friendly, cloud-ready |
@@ -84,7 +84,7 @@ Full architecture blueprint: [docs/architecture.md](docs/architecture.md) · Des
 | Transforms | pandas + numpy | Readable and portable for MVP-scale analytical data |
 | Analysis | pandas-based finance math | Sufficient for CAPM and portfolio metrics without overcomplicating the stack |
 | Reporting | Jinja2 + matplotlib | Self-contained HTML artifact instead of a running dashboard |
-| Orchestration | Apache Airflow | Most widely adopted pipeline orchestrator in finance DE |
+| Orchestration | Apache Airflow | Clear task dependency management, retries, scheduling, and run history |
 | Containerization | Docker Compose | Reproducible local orchestration stack |
 | Testing | pytest | Standard Python testing workflow |
 | Linting | Ruff | Fast, simple, modern linting |
@@ -98,7 +98,7 @@ Full architecture blueprint: [docs/architecture.md](docs/architecture.md) · Des
 | Staged | `data/staged/` | Indicator-enriched price series |
 | Curated | `data/curated/` | Analysis-ready returns, correlations, and summary metrics |
 | Output | `output/` | Generated HTML reports |
-| Examples | `examples/` | Committed sample artifact for repo review |
+| Examples | `examples/` | Committed sample output for inspection without running the pipeline |
 
 Ticker-level partitioning is used intentionally. Re-running `AAPL` should not mutate `MSFT`, and debugging should be as simple as opening one parquet file for one ticker.
 
@@ -108,6 +108,41 @@ Pre-generated sample report:
 [Example report](https://shervin-taheripour.github.io/finance-data-platform/examples/sample_report.html)
 
 Current report artifacts are also generated into `output/` when the pipeline runs.
+
+## MVP Report Surface
+
+Report labels and value formats are defined in [config/report_fields.yaml](config/report_fields.yaml). This file is the source of truth for report-facing field names and formatting.
+
+Current MVP report fields:
+
+- Company profile
+  - `symbol`
+  - `short_name`
+  - `long_name`
+  - `sector`
+  - `industry`
+  - `country`
+  - `currency`
+  - `exchange`
+  - `market_cap`
+  - `shares_outstanding`
+  - `as_of_date`
+  - `source`
+- Latest indicators
+  - `sma_*`
+  - `ema_*`
+  - `rsi_*`
+  - `macd_line`
+  - `volatility_*`
+- Risk metrics
+  - `sharpe_ratio`
+  - `treynor_ratio`
+  - `beta`
+  - `alpha`
+  - `equal_weight_variance`
+- Cumulative returns
+  - `symbol`
+  - `cumulative_return`
 
 ## Quickstart
 

@@ -1,0 +1,93 @@
+fields:
+  - field_name: symbol
+    display_label: Symbol
+    section: metadata
+    format_type: text
+  - field_name: short_name
+    display_label: Short Name
+    section: metadata
+    format_type: text
+  - field_name: long_name
+    display_label: Company Name
+    section: metadata
+    format_type: text
+  - field_name: sector
+    display_label: Sector
+    section: metadata
+    format_type: text
+  - field_name: industry
+    display_label: Industry
+    section: metadata
+    format_type: text
+  - field_name: country
+    display_label: Country
+    section: metadata
+    format_type: text
+  - field_name: currency
+    display_label: Currency
+    section: metadata
+    format_type: text
+  - field_name: exchange
+    display_label: Exchange
+    section: metadata
+    format_type: text
+  - field_name: market_cap
+    display_label: Market Capitalization
+    section: metadata
+    format_type: integer
+  - field_name: shares_outstanding
+    display_label: Shares Outstanding
+    section: metadata
+    format_type: integer
+  - field_name: as_of_date
+    display_label: As Of Date
+    section: metadata
+    format_type: text
+  - field_name: source
+    display_label: Source
+    section: metadata
+    format_type: source_name
+  - field_name: sma_*
+    display_label: SMA ({suffix} Day)
+    section: indicators
+    format_type: decimal_2
+  - field_name: ema_*
+    display_label: EMA ({suffix} Day)
+    section: indicators
+    format_type: decimal_2
+  - field_name: rsi_*
+    display_label: RSI ({suffix} Day)
+    section: indicators
+    format_type: decimal_2
+  - field_name: macd_line
+    display_label: MACD Line
+    section: indicators
+    format_type: decimal_2
+  - field_name: volatility_*
+    display_label: Volatility ({suffix} Day)
+    section: indicators
+    format_type: percent_2
+  - field_name: beta
+    display_label: Beta
+    section: analysis
+    format_type: decimal_2
+  - field_name: alpha
+    display_label: Alpha
+    section: analysis
+    format_type: decimal_4
+  - field_name: sharpe_ratio
+    display_label: Sharpe Ratio
+    section: analysis
+    format_type: decimal_2
+  - field_name: treynor_ratio
+    display_label: Treynor Ratio
+    section: analysis
+    format_type: decimal_2
+  - field_name: equal_weight_variance
+    display_label: Equal-Weight Variance
+    section: analysis
+    format_type: decimal_4
+  - field_name: cumulative_return
+    display_label: Cumulative Return
+    section: returns
+    format_type: percent_2
