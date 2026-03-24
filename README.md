@@ -4,20 +4,11 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-A layered finance data platform that ingests market data, validates it, stores it across raw/staged/curated zones, computes portfolio analytics, and produces recruiter-friendly HTML reports.
-
-This project is deliberately built to show data engineering judgment rather than notebook experimentation: explicit data contracts, partitioned Parquet storage, DuckDB analytical reads, Airflow orchestration, Docker reproducibility, and a final artifact that can be reviewed without running a web app.
+A layered data platform for financial market data — from ingestion to automated reporting — built with modern Python data engineering practices. Explicit data contracts, partitioned Parquet storage, DuckDB analytical reads, Airflow orchestration, Docker reproducibility, and self-contained HTML report artifacts.
 
 ## Why This Project Exists
 
-This repo is the “production-minded rebuild” of an earlier finance analytics project. The goal was not to make the flashiest finance app; it was to prove that the same domain can be re-implemented as a disciplined data platform with clearer boundaries, stronger testing, and better operational packaging.
-
-If a recruiter opens this repo without running anything, they should be able to understand:
-- what the pipeline does
-- why the architecture was chosen
-- where data lives at each stage
-- how to run it locally or with Airflow
-- what engineering trade-offs were made
+This repo is a production-minded rebuild of an earlier finance analytics project. The original was notebook-heavy and exploratory. This version re-engineers the same domain into a layered data platform with explicit contracts, partitioned storage, orchestration, and reproducibility.
 
 ## What The Pipeline Does
 
@@ -85,7 +76,7 @@ Full architecture blueprint: [docs/architecture.md](docs/architecture.md) · Des
 
 | Area | Choice | Why this was chosen |
 |---|---|---|
-| Language | Python 3.11+ | Best fit for Airflow, analytics, validation, and recruiter expectations |
+| Language | Python 3.11+ | Industry standard for data engineering and finance |
 | Source data | yfinance | Fastest single-source path to OHLCV, dividends, splits, and metadata |
 | Validation | Pydantic v2 | Explicit ingestion boundary and strong schema contracts |
 | File format | Parquet / pyarrow | Columnar, compressed, analytics-friendly, cloud-ready |
@@ -93,7 +84,7 @@ Full architecture blueprint: [docs/architecture.md](docs/architecture.md) · Des
 | Transforms | pandas + numpy | Readable and portable for MVP-scale analytical data |
 | Analysis | pandas-based finance math | Sufficient for CAPM and portfolio metrics without overcomplicating the stack |
 | Reporting | Jinja2 + matplotlib | Self-contained HTML artifact instead of a running dashboard |
-| Orchestration | Apache Airflow | Strongest recruiter-recognized orchestration signal in finance DE |
+| Orchestration | Apache Airflow | Most widely adopted pipeline orchestrator in finance DE |
 | Containerization | Docker Compose | Reproducible local orchestration stack |
 | Testing | pytest | Standard Python testing workflow |
 | Linting | Ruff | Fast, simple, modern linting |
@@ -257,9 +248,9 @@ A few choices worth calling out directly:
 - reports are generated as static artifacts, not dashboards
 - the storage layout is cloud-friendly without pretending cloud deployment is part of the MVP
 
-## Origin Story
+## Origin
 
-This project grew out of an earlier stock analysis project and intentionally re-scoped the domain into a stronger engineering artifact. The result is less flashy, but much more representative of real data platform work: contracts, storage design, orchestration, testing, and shipping discipline.
+Evolved from a certification capstone project ([stock-analysis-tool](https://github.com/shervin-taheripour/stock-analysis-tool), built with Dariya Sharonova, 2025). The original was notebook-heavy and exploratory. This repo re-engineers the domain logic into a modular platform with layered storage, orchestration, testing, and reproducibility.
 
 ## Release Notes
 
