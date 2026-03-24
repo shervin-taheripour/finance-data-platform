@@ -114,7 +114,7 @@ Ticker-level partitioning is used intentionally. Re-running `AAPL` should not mu
 ## Sample Output
 
 Pre-generated sample report:
-- [examples/sample_report.html](examples/sample_report.html)
+[Example report](https://shervin-taheripour.github.io/finance-data-platform/examples/sample_report.html)
 
 Current report artifacts are also generated into `output/` when the pipeline runs.
 
