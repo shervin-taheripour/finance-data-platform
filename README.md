@@ -18,7 +18,8 @@ This repo is a production-minded rebuild of an earlier finance analytics project
 4. Builds technical indicators and enriched return series
 5. Computes CAPM and portfolio risk metrics
 6. Renders self-contained HTML reports with embedded charts
-7. Runs either locally through `make` targets or under Airflow via Docker Compose
+7. Optionally publishes generated reports to AWS S3 behind CloudFront
+8. Runs either locally through `make` targets or under Airflow via Docker Compose
 
 ## Architecture
 
@@ -34,8 +35,11 @@ flowchart TB
         ANA["Analysis\n<i>CAPM · Sharpe · Treynor</i>"]
         CUR["Curated zone\n<i>data/curated/*.parquet</i>"]
         RPT["HTML report\n<i>Jinja2 + matplotlib</i>"]
+        S3["S3 publish\n<i>optional static artifacts</i>"]
+        CDN["CloudFront URL\n<i>optional public delivery</i>"]
 
         API --> ING --> RAW --> TRN --> STG --> ANA --> CUR --> RPT
+        RPT -. optional publish .-> S3 --> CDN
     end
 
     subgraph orch ["Orchestration (control plane)"]
@@ -61,6 +65,8 @@ flowchart TB
     style DDB fill:#FAEEDA,stroke:#854F0B,color:#633806
     style API fill:#F1EFE8,stroke:#5F5E5A,color:#444441
     style RPT fill:#FAECE7,stroke:#993C1D,color:#712B13
+    style S3 fill:#F4E9FF,stroke:#6B3FA0,color:#4E2D76
+    style CDN fill:#FFF4E5,stroke:#A66300,color:#7A4A00
     style AF fill:#F1EFE8,stroke:#5F5E5A,color:#444441
     style T1 fill:#F1EFE8,stroke:#5F5E5A,color:#444441
     style T2 fill:#F1EFE8,stroke:#5F5E5A,color:#444441
@@ -84,6 +90,7 @@ Full architecture blueprint: [docs/architecture.md](docs/architecture.md) · Des
 | Transforms | pandas + numpy | Readable and portable for MVP-scale analytical data |
 | Analysis | pandas-based finance math | Sufficient for CAPM and portfolio metrics without overcomplicating the stack |
 | Reporting | Jinja2 + matplotlib | Self-contained HTML artifact instead of a running dashboard |
+| Cloud publish | AWS S3 + CloudFront | Optional public delivery layer for generated report artifacts |
 | Orchestration | Apache Airflow | Clear task dependency management, retries, scheduling, and run history |
 | Containerization | Docker Compose | Reproducible local orchestration stack |
 | Testing | pytest | Standard Python testing workflow |
@@ -108,6 +115,15 @@ Pre-generated sample report:
 [Example report](https://shervin-taheripour.github.io/finance-data-platform/examples/sample_report.html)
 
 Current report artifacts are also generated into `output/` when the pipeline runs.
+
+## Live Reports
+
+Cloud publishing is optional. When configured, `make publish` uploads the contents of `output/` plus the shared report stylesheet to a private S3 bucket behind CloudFront.
+
+Example URL shape after deployment:
+- `https://d9m4ljhm4l3qi.cloudfront.net/reports/aapl_report.html`
+
+Setup notes and least-privilege AWS templates live under [infra/aws/README.md](infra/aws/README.md).
 
 ## MVP Report Surface
 
@@ -182,6 +198,12 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
 
+Optional publishing dependency:
+
+```bash
+python -m pip install -e ".[publishing]"
+```
+
 Run ingestion once to populate the raw zone:
 
 ```bash
@@ -202,6 +224,13 @@ Or run the raw-to-report flow after ingestion:
 make pipeline
 ```
 
+Optional publish step after reports are generated:
+
+```bash
+make publish
+make publish-dry-run
+```
+
 ## Configuration Reference
 
 All runtime configuration lives in [config.yaml](config.yaml).
@@ -213,7 +242,8 @@ Key sections:
 - `transforms.indicators`: SMA, EMA, RSI, MACD, Bollinger, volatility windows
 - `transforms.enrichment`: rolling correlation window
 - `analysis`: risk-free rate
-- `reporting`: output path and template path
+- `reporting`: output path, template path, and field registry
+- `publishing`: S3 bucket, region, prefix, and CloudFront distribution settings
 
 Example:
 
@@ -234,7 +264,8 @@ finance-data-platform/
 │   ├── storage/
 │   ├── transforms/
 │   ├── analysis/
-│   └── reporting/
+│   ├── reporting/
+│   └── publishing/
 ├── orchestration/dags/
 ├── tests/
 ├── data/
@@ -244,6 +275,8 @@ finance-data-platform/
 ├── output/
 ├── examples/
 ├── docs/
+├── infra/aws/
+├── assets/
 ├── config.yaml
 ├── Makefile
 ├── Dockerfile
@@ -258,6 +291,8 @@ make ingest       # Download and persist raw market data
 make transform    # Build staged indicator datasets
 make analyze      # Build curated analytical outputs
 make report       # Render HTML reports
+make publish      # Upload reports to S3 and invalidate CloudFront
+make publish-dry-run  # Preview uploads/invalidation without changing AWS state
 make pipeline     # Run transform -> analyze -> report
 make test         # Run pytest
 make lint         # Run Ruff

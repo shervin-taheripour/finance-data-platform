@@ -2,7 +2,7 @@
 
 PYTHON ?= python3
 
-.PHONY: ingest transform analyze report pipeline test lint clean docker-up docker-down
+.PHONY: ingest transform analyze report publish publish-dry-run pipeline test lint clean docker-up docker-down
 
 ingest:
 >PYTHONPATH=src $(PYTHON) -m finance_data_platform.ingestion.run_ingest
@@ -15,6 +15,12 @@ analyze:
 
 report:
 >PYTHONPATH=src $(PYTHON) -m finance_data_platform.reporting.run_report
+
+publish:
+>PYTHONPATH=src $(PYTHON) -m finance_data_platform.publishing.run_publish $(PUBLISH_ARGS)
+
+publish-dry-run:
+>PYTHONPATH=src $(PYTHON) -m finance_data_platform.publishing.run_publish --dry-run
 
 pipeline:
 >$(MAKE) transform

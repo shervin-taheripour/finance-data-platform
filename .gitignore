@@ -48,3 +48,7 @@ output/*
 # Local environment
 .env
 !.env.example
+
+# AWS local variants
+infra/aws/*.local.json
+infra/aws/*.local.md

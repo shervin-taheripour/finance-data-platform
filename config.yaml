@@ -1,21 +1,29 @@
 universe:
-  tickers: ["AAPL", "MSFT", "GOOGL", "JPM", "GS", "BAC"]
-  benchmark: "SPY"
-  start_date: "2020-01-01"
+  tickers:
+  - AAPL
+  - MSFT
+  - GOOGL
+  - JPM
+  - GS
+  - BAC
+  benchmark: SPY
+  start_date: '2020-01-01'
   end_date: null
-
 ingestion:
   retry_attempts: 3
   retry_delay_seconds: 5
-
 storage:
-  base_path: "data"
-  format: "parquet"
-
+  base_path: data
+  format: parquet
 transforms:
   indicators:
-    sma_windows: [20, 50, 200]
-    ema_windows: [12, 26]
+    sma_windows:
+    - 20
+    - 50
+    - 200
+    ema_windows:
+    - 12
+    - 26
     rsi_window: 14
     macd_fast: 12
     macd_slow: 26
@@ -24,11 +32,19 @@ transforms:
     volatility_window: 30
   enrichment:
     correlation_window: 60
-
 analysis:
   risk_free_rate: 0.04
-
 reporting:
-  output_path: "output"
-  template: "src/finance_data_platform/reporting/templates/report.html"
-  field_registry: "config/report_fields.yaml"
+  output_path: output
+  template: src/finance_data_platform/reporting/templates/report.html
+  field_registry: config/report_fields.yaml
+publishing:
+  enabled: true
+  assets_path: assets
+  s3:
+    bucket: shervin-finance-reports-2026
+    region: eu-north-1
+    prefix: reports/
+  cloudfront:
+    distribution_id: E2L46APHXRHQ7R
+    distribution_url: https://d9m4ljhm4l3qi.cloudfront.net

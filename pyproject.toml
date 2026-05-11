@@ -23,6 +23,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+publishing = [
+  "boto3>=1.34,<2.0",
+]
 dev = [
   "pytest>=8.0,<9.0",
   "ruff>=0.11,<1.0",

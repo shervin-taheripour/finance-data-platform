@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,15 @@ def load_runtime_config(config_path: str = "config.yaml") -> dict[str, Any]:
     with Path(config_path).open("r", encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}
 
+
+
+def _sync_report_assets(output_root: Path) -> None:
+    source = Path("assets/report_styles.css")
+    if not source.exists():
+        return
+    target = output_root / "assets" / source.name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
 
 def _load_portfolio_summary(base_path: str) -> dict[str, object]:
     returns = read_partitioned_dataset("returns", zone="curated", base_path=base_path)
@@ -69,6 +79,7 @@ def main(config_path: str = "config.yaml") -> None:
     config = load_runtime_config(config_path)
     base_path = str(config["storage"]["base_path"])
     output_root = Path(str(config["reporting"]["output_path"]))
+    _sync_report_assets(output_root)
     market_symbol = str(config["universe"]["benchmark"]).upper()
     symbols = [str(symbol).upper() for symbol in config["universe"]["tickers"]]
 

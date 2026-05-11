@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - Unreleased
+
+### Added
+- Optional AWS publishing path for generated HTML reports via S3 and CloudFront
+- Least-privilege AWS setup templates and manual setup notes under `infra/aws/`
+- Shared stylesheet asset for locally rendered and published reports
+
 ## [0.1.0] - 2026-03-23
 
 Initial MVP release.
