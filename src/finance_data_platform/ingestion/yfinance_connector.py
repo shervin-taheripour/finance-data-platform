@@ -19,6 +19,7 @@ from finance_data_platform.ingestion.schemas import (
     SecurityMetadata,
     SplitRecord,
 )
+from finance_data_platform.universe_presets import resolve_universe_payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,20 +75,16 @@ def load_ingestion_config(config_path: str = "config.yaml") -> IngestionConfig:
     with config_file.open("r", encoding="utf-8") as fh:
         payload: dict[str, Any] = yaml.safe_load(fh) or {}
 
-    universe_payload = payload.get("universe", {})
+    universe_payload = resolve_universe_payload(payload.get("universe", {}))
     ingestion_payload = payload.get("ingestion", {})
     storage_payload = payload.get("storage", {})
 
     return IngestionConfig(
         universe=UniverseConfig(
-            tickers=[str(t).upper() for t in universe_payload.get("tickers", [])],
-            benchmark=str(universe_payload.get("benchmark", "SPY")).upper(),
-            start_date=str(universe_payload.get("start_date", "2020-01-01")),
-            end_date=(
-                None
-                if universe_payload.get("end_date") is None
-                else str(universe_payload.get("end_date"))
-            ),
+            tickers=universe_payload["tickers"],
+            benchmark=universe_payload["benchmark"],
+            start_date=universe_payload["start_date"],
+            end_date=universe_payload["end_date"],
         ),
         ingestion=RetryConfig(
             retry_attempts=int(ingestion_payload.get("retry_attempts", 3)),

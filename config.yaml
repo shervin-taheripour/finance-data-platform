@@ -9,6 +9,7 @@ universe:
   benchmark: SPY
   start_date: '2020-01-01'
   end_date: null
+  preset: default
 ingestion:
   retry_attempts: 3
   retry_delay_seconds: 5

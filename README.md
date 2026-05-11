@@ -6,6 +6,51 @@
 
 A layered data platform for financial market data, from ingestion to automated HTML reporting. The implementation emphasizes explicit data contracts, partitioned Parquet storage, DuckDB analytical reads, Airflow orchestration, Docker reproducibility, and self-contained report artifacts.
 
+## Run And Open Reports
+
+If your main interest is the generated HTML output, use one of these two paths.
+
+### Default Per-Ticker Reports
+
+```bash
+make PYTHON=.venv/bin/python3 ingest
+make PYTHON=.venv/bin/python3 pipeline
+```
+
+Open reports from:
+- `output/aapl_report.html`
+- `output/msft_report.html`
+- `output/googl_report.html`
+- `output/jpm_report.html`
+- `output/gs_report.html`
+- `output/bac_report.html`
+
+Committed sample:
+- [Per-ticker report](https://shervin-taheripour.github.io/finance-data-platform/examples/sample_report.html)
+
+### Semiconductor Strategy Report
+
+```bash
+make PYTHON=.venv/bin/python3 strategy-semiconductor
+```
+
+Open report from:
+- `output/strategy_semiconductor_supply_chain.html`
+
+Committed sample:
+- [Strategy report](https://shervin-taheripour.github.io/finance-data-platform/examples/sample_strategy_report.html)
+
+Optional publish step:
+
+```bash
+make PYTHON=.venv/bin/python3 strategy-semiconductor-publish
+make PYTHON=.venv/bin/python3 strategy-semiconductor-url
+```
+
+Published report locations:
+- `https://d9m4ljhm4l3qi.cloudfront.net/reports/aapl_report.html`
+- `https://d9m4ljhm4l3qi.cloudfront.net/reports/strategy_semiconductor_supply_chain.html`
+
 ## Why This Project Exists
 
 This repo is a production-minded rebuild of an earlier finance analytics project. The original was notebook-heavy and exploratory. This version re-engineers the same domain into a layered data platform with explicit contracts, partitioned storage, orchestration, and reproducibility.
@@ -109,12 +154,16 @@ Full architecture blueprint: [docs/architecture.md](docs/architecture.md) · Des
 
 Ticker-level partitioning is used intentionally. Re-running `AAPL` should not mutate `MSFT`, and debugging should be as simple as opening one parquet file for one ticker.
 
-## Sample Output
+## Strategy Example
 
-Pre-generated sample report:
-[Example report](https://shervin-taheripour.github.io/finance-data-platform/examples/sample_report.html)
+The project includes a preset-driven worked example for a semiconductor supply chain thesis.
 
-Current report artifacts are also generated into `output/` when the pipeline runs.
+Preset file:
+- `config/universes/semiconductor_supply_chain.yaml`
+
+This preset contains 18 thesis tickers. The benchmark ticker `SPY` is added separately during ingestion and analysis.
+
+Method, bucket definitions, and data-handling rules live in [docs/strategy_examples.md](docs/strategy_examples.md).
 
 ## Live Reports
 
@@ -129,7 +178,7 @@ Setup notes and least-privilege AWS templates live under [infra/aws/README.md](i
 
 Report labels and value formats are defined in [config/report_fields.yaml](config/report_fields.yaml). This file is the source of truth for report-facing field names and formatting.
 
-Current MVP report fields:
+Current MVP per-ticker report fields:
 
 - Company profile
   - `symbol`
@@ -195,40 +244,47 @@ git clone git@github.com:shervin-taheripour/finance-data-platform.git
 cd finance-data-platform
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python3 -m pip install -e ".[dev]"
 ```
 
 Optional publishing dependency:
 
 ```bash
-python -m pip install -e ".[publishing]"
+python3 -m pip install -e ".[publishing]"
 ```
 
 Run ingestion once to populate the raw zone:
 
 ```bash
-make ingest
+make PYTHON=.venv/bin/python3 ingest
 ```
 
-Run steps individually:
+Run default per-ticker reports:
 
 ```bash
-make transform
-make analyze
-make report
+make PYTHON=.venv/bin/python3 pipeline
 ```
 
-Or run the raw-to-report flow after ingestion:
+Or run the downstream stages individually:
 
 ```bash
-make pipeline
+make PYTHON=.venv/bin/python3 transform
+make PYTHON=.venv/bin/python3 analyze
+make PYTHON=.venv/bin/python3 report
 ```
 
-Optional publish step after reports are generated:
+Render the preset-driven strategy example:
 
 ```bash
-make publish
-make publish-dry-run
+make PYTHON=.venv/bin/python3 strategy-semiconductor
+```
+
+Optional publish steps after reports are generated:
+
+```bash
+make PYTHON=.venv/bin/python3 publish
+make PYTHON=.venv/bin/python3 publish-dry-run
+make PYTHON=.venv/bin/python3 strategy-semiconductor-publish
 ```
 
 ## Configuration Reference
@@ -236,7 +292,7 @@ make publish-dry-run
 All runtime configuration lives in [config.yaml](config.yaml).
 
 Key sections:
-- `universe`: tickers, benchmark, date window
+- `universe`: tickers, benchmark, date window, and optional preset
 - `ingestion`: retry attempts and delay
 - `storage`: base path and file format
 - `transforms.indicators`: SMA, EMA, RSI, MACD, Bollinger, volatility windows
@@ -253,6 +309,7 @@ universe:
   benchmark: "SPY"
   start_date: "2020-01-01"
   end_date: null
+  preset: "default"
 ```
 
 ## Project Structure

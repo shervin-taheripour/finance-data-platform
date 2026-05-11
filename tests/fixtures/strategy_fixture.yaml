@@ -1,0 +1,31 @@
+name: strategy_fixture
+description: Test fixture for bucket aggregation
+benchmark: SPY
+buckets:
+  - id: core
+    label: Core Names
+    role: Compounders
+    tickers:
+      - symbol: AAA
+        company: Alpha Corp
+        currency: USD
+      - symbol: BBB
+        company: Beta Corp
+        currency: USD
+  - id: global
+    label: Global Names
+    role: Mixed currency exposure
+    tickers:
+      - symbol: CCC
+        company: Gamma Corp
+        currency: USD
+      - symbol: DDD.T
+        company: Delta KK
+        currency: JPY
+  - id: empty
+    label: Empty Bucket
+    role: Missing data example
+    tickers:
+      - symbol: EEE
+        company: Empty Inc
+        currency: USD

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ report.preset_name }} Strategy Report</title>
+    <link rel="stylesheet" href="assets/report_styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h2>Worked Example</h2>
+        <h1>{{ report.preset_name.replace('_', ' ').title() }} Strategy Report</h1>
+        <p>{{ report.description }}</p>
+        <p style="margin-top: 12px;">Benchmark: {{ report.benchmark }} · Buckets: {{ report.bucket_count }} · Tickers: {{ report.total_tickers }} · Generated: {{ report.generated_at }}</p>
+        <p style="margin-top: 12px; font-style: italic;">{{ report.data_view_note }}</p>
+        <p style="margin-top: 12px; font-weight: 700; color: #8b3a0e;">{{ report.disclaimer }}</p>
+      </section>
+
+      <section class="panel chart-panel">
+        <h2>Bucket Summary</h2>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Bucket</th>
+              <th>Role</th>
+              <th>Tickers With Data</th>
+              <th>Average Cumulative Return</th>
+              <th>Average Volatility</th>
+              <th>Average Sharpe</th>
+              <th>Average Beta vs Benchmark</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in report.summary_rows %}
+            <tr>
+              <td>{{ row.label }}</td>
+              <td>{{ row.role }}</td>
+              <td>{{ row.tickers_with_data }}/{{ row.total_tickers }}</td>
+              <td>{{ format_metric(row.avg_cumulative_return, kind='percent') }}</td>
+              <td>{{ format_metric(row.avg_volatility, kind='percent') }}</td>
+              <td>{{ format_metric(row.avg_sharpe_ratio, kind='decimal') }}</td>
+              <td>
+                {{ format_metric(row.avg_beta, kind='decimal') }}
+                {% if row.beta_aggregate_note %}<div class="empty">{{ row.beta_aggregate_note }}</div>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      {% for bucket in report.bucket_sections %}
+      <section class="panel chart-panel">
+        <h2>{{ bucket.label }}</h2>
+        <p>{{ bucket.role }}</p>
+        {% if bucket.empty_message %}
+        <p class="empty" style="margin-top: 12px;">{{ bucket.empty_message }}</p>
+        {% else %}
+        <table class="report-table" style="margin-top: 16px;">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Company</th>
+              <th>Currency</th>
+              <th>Cumulative Return</th>
+              <th>Volatility</th>
+              <th>Sharpe</th>
+              <th>Beta</th>
+              <th>Alpha</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in bucket.rows %}
+            <tr>
+              <td>{{ row.symbol }}</td>
+              <td>{{ row.company }}</td>
+              <td>{% if row.currency != 'USD' %}<strong>{{ row.currency }}</strong>{% else %}{{ row.currency }}{% endif %}</td>
+              <td>{{ format_metric(row.cumulative_return, kind='percent') }}</td>
+              <td>{{ format_metric(row.volatility, kind='percent') }}</td>
+              <td>{{ format_metric(row.sharpe_ratio, kind='decimal') }}</td>
+              <td>{{ format_metric(row.beta, kind='decimal') }}</td>
+              <td>{{ format_metric(row.alpha, kind='decimal_4') }}</td>
+              <td>{% if row.status != 'ok' %}{{ row.status }}{% else %}ok{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </section>
+      {% endfor %}
+
+      <section class="panel chart-panel">
+        <h2>Data Quality</h2>
+        {% if report.data_quality_issues %}
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for issue in report.data_quality_issues %}
+            <tr>
+              <td>{{ issue.symbol }}</td>
+              <td>{{ issue.reason }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No data quality issues recorded for this run.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

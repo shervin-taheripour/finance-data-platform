@@ -18,8 +18,10 @@ from finance_data_platform.ingestion.yfinance_connector import (
     IngestionConfig,
     fetch_ticker_data,
     fetch_universe,
+    load_ingestion_config,
 )
 from finance_data_platform.storage.parquet_store import query_raw, write_raw_ticker_batch
+from finance_data_platform.universe_presets import load_universe_preset
 
 
 class _FakeTicker:
@@ -254,3 +256,66 @@ def test_query_raw_can_read_ticker_partitioned_parquet(raw_snapshot_dir) -> None
     assert len(result) == 1
     assert result.iloc[0]["symbol"] == "AAPL"
     assert float(result.iloc[0]["close"]) == 101.5
+
+
+def test_universe_preset_loads() -> None:
+    preset = load_universe_preset("semiconductor_supply_chain")
+
+    assert preset.name == "semiconductor_supply_chain"
+    assert preset.benchmark == "SPY"
+    assert len(preset.tickers) == 18
+    assert preset.tickers[:3] == ["ASML", "AMAT", "KLAC"]
+    assert "8035.T" in preset.tickers
+    assert "SU.PA" in preset.tickers
+
+
+def test_load_ingestion_config_resolves_default_preset(tmp_path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+universe:
+  preset: default
+  tickers: [AAPL, MSFT]
+  benchmark: SPY
+  start_date: '2024-01-01'
+  end_date: null
+ingestion:
+  retry_attempts: 1
+  retry_delay_seconds: 0
+storage:
+  base_path: data
+  format: parquet
+""".strip(),
+        encoding="utf-8",
+    )
+
+    cfg = load_ingestion_config(str(config_path))
+
+    assert cfg.universe.tickers == ["AAPL", "MSFT"]
+    assert cfg.universe.benchmark == "SPY"
+
+
+def test_load_ingestion_config_resolves_semiconductor_preset(tmp_path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+universe:
+  preset: semiconductor_supply_chain
+  start_date: '2024-01-01'
+  end_date: null
+ingestion:
+  retry_attempts: 1
+  retry_delay_seconds: 0
+storage:
+  base_path: data
+  format: parquet
+""".strip(),
+        encoding="utf-8",
+    )
+
+    cfg = load_ingestion_config(str(config_path))
+
+    assert cfg.universe.benchmark == "SPY"
+    assert "NVDA" in cfg.universe.tickers
+    assert "8035.T" in cfg.universe.tickers
+    assert len(cfg.universe.tickers) == 18

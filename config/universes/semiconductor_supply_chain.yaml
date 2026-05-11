@@ -1,0 +1,82 @@
+name: semiconductor_supply_chain
+description: "AI infrastructure supply chain thesis. Source: docs/strategy_examples.md"
+benchmark: SPY
+buckets:
+  - id: core_wfe
+    label: Core Semiconductor Equipment
+    role: Long-term compounders with deep moats
+    tickers:
+      - symbol: ASML
+        company: ASML Holding
+        currency: USD
+      - symbol: AMAT
+        company: Applied Materials
+        currency: USD
+      - symbol: KLAC
+        company: KLA
+        currency: USD
+  - id: wfe_cycle
+    label: WFE Cycle Exposure
+    role: Cyclical upside from fab spending
+    tickers:
+      - symbol: LRCX
+        company: Lam Research
+        currency: USD
+      - symbol: 8035.T
+        company: Tokyo Electron
+        currency: JPY
+      - symbol: ASMIY
+        company: ASM International
+        currency: USD
+  - id: packaging_osat
+    label: Advanced Packaging and OSAT
+    role: Beneficiaries of chip complexity and AI packaging
+    tickers:
+      - symbol: BESIY
+        company: BE Semiconductor
+        currency: USD
+      - symbol: AMKR
+        company: Amkor Technology
+        currency: USD
+      - symbol: ASX
+        company: ASE Technology
+        currency: USD
+  - id: networking
+    label: Data-Center Networking
+    role: AI cluster networking and hyperscaler build-outs
+    tickers:
+      - symbol: ANET
+        company: Arista Networks
+        currency: USD
+      - symbol: 2345.TW
+        company: Accton Technology
+        currency: TWD
+  - id: power_cooling
+    label: Power and Cooling
+    role: AI data-center electricity and thermal constraints
+    tickers:
+      - symbol: VRT
+        company: Vertiv
+        currency: USD
+      - symbol: ETN
+        company: Eaton
+        currency: USD
+      - symbol: SU.PA
+        company: Schneider Electric
+        currency: EUR
+  - id: platform_anchors
+    label: Platform Anchors
+    role: Dominant ecosystem players
+    tickers:
+      - symbol: NVDA
+        company: NVIDIA
+        currency: USD
+      - symbol: MSFT
+        company: Microsoft
+        currency: USD
+      - symbol: GOOGL
+        company: Alphabet
+        currency: USD
+      - symbol: TSM
+        company: TSMC
+        currency: USD
